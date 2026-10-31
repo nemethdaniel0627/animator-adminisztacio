@@ -714,3 +714,4 @@ export default function TisztujitasPositionsModal({ event, isOpen, onClose, onPo
     </div>
   )
 }
+
