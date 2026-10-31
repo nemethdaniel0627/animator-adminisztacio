@@ -23,6 +23,14 @@ const PORT = process.env.PORT || 3001
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }))
 app.use(express.json())
 
+// Automatically normalize accidental duplicate `/api/api/...` paths from clients
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace(/^\/api\/api\//, '/api/')
+  }
+  next()
+})
+
 // Approved 7 Event Types per Design Specification
 const VALID_EVENT_TYPES = [
   'egyetemi rendezvény',
@@ -66,7 +74,7 @@ const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || process.env['anim-db-pswd'] || process.env.DB_PASS || '',
   database: process.env.DB_NAME || 'anim_uj',
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,

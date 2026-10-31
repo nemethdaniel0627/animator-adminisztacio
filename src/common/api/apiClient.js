@@ -155,7 +155,14 @@ async function handleMockRequest(method, endpoint, body = null) {
  * Live HTTP request handler
  */
 async function handleLiveRequest(method, endpoint, body = null) {
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+  // Normalize path to prevent double `/api/api`
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const base = String(API_BASE_URL || '').trim().replace(/\/+$/, '')
+
+  if (base.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.slice(4) // remove duplicate '/api'
+  }
+  const url = `${base}${cleanEndpoint}`
 
   const options = {
     method,
