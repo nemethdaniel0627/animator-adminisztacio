@@ -4,6 +4,7 @@ import { EVENT_TYPES } from '../modell/eventModels.js'
 import { eventService } from '../szolgaltatas/eventService.js'
 import EventFormModal from './EventFormModal.jsx'
 import TisztujitasModal from './TisztujitasModal.jsx'
+import TisztujitasPositionsModal from './TisztujitasPositionsModal.jsx'
 import AttendanceManager from '../../jelenlet/felulet/AttendanceManager.jsx'
 import { apiClient } from '../../../common/api/apiClient.js'
 
@@ -18,8 +19,6 @@ export default function EventList() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null)
   const [viewingPositionsEvent, setViewingPositionsEvent] = useState(null)
-  const [positionsList, setPositionsList] = useState([])
-  const [loadingPositions, setLoadingPositions] = useState(false)
 
   const loadEvents = async () => {
     try {
@@ -77,18 +76,8 @@ export default function EventList() {
     )
   }
 
-  const handleOpenPositions = async (event) => {
+  const handleOpenPositions = (event) => {
     setViewingPositionsEvent(event)
-    setLoadingPositions(true)
-    try {
-      const pos = await apiClient.getEventPositions(event.esemeny_ID)
-      setPositionsList(pos || [])
-    } catch (err) {
-      console.error(err)
-      setPositionsList([])
-    } finally {
-      setLoadingPositions(false)
-    }
   }
 
   return (
@@ -334,90 +323,12 @@ export default function EventList() {
         onEventCreated={handleEventCreated}
       />
 
-      {/* View Positions Modal for a Tisztújítás */}
-      {viewingPositionsEvent && (
-        <div className="modal-backdrop" onClick={() => setViewingPositionsEvent(null)}>
-          <div
-            className="modal-content"
-            style={{ maxWidth: '480px', padding: '24px' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#851b22', textTransform: 'uppercase' }}>
-                  Tisztújítás Pozíciói
-                </span>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                  {viewingPositionsEvent.cim}
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={() => setViewingPositionsEvent(null)}
-                aria-label="Bezárás"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              {loadingPositions ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>
-                  Pozíciók betöltése...
-                </div>
-              ) : positionsList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                  Nincsenek rögzített pozíciók ehhez a tisztújításhoz.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {positionsList.map((pos) => (
-                    <div
-                      key={pos.pozicio_ID}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 14px',
-                        backgroundColor: 'var(--color-surface-hover)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                        {pos.animator_nev}
-                      </span>
-                      <span
-                        style={{
-                          backgroundColor: '#851b22',
-                          color: '#ffffff',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '4px'
-                        }}
-                      >
-                        {pos.pozicio}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setViewingPositionsEvent(null)}
-              >
-                Bezárás
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive Manage Positions Modal for a Tisztújítás */}
+      <TisztujitasPositionsModal
+        event={viewingPositionsEvent}
+        isOpen={Boolean(viewingPositionsEvent)}
+        onClose={() => setViewingPositionsEvent(null)}
+      />
 
       {/* Attendance Manager Modal */}
       {selectedEventForAttendance && (

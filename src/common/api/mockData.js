@@ -427,8 +427,9 @@ function loadStore() {
           })
         }
 
-        // Ensure only Németh Dániel holds an admin position in the latest event
-        parsed.pozicio = JSON.parse(JSON.stringify(INITIAL_DATA.pozicio))
+        if (!parsed.pozicio || !Array.isArray(parsed.pozicio)) {
+          parsed.pozicio = JSON.parse(JSON.stringify(INITIAL_DATA.pozicio))
+        }
         return parsed
       }
     } catch {
@@ -669,6 +670,57 @@ export const mockStore = {
       poziciok: newPoziciok,
       message: 'Tisztújítás és a pozíciók sikeresen rögzítve.'
     }
+  },
+
+  addPozicio(eventId, { animator_ID, pozicio }) {
+    if (!store.pozicio) store.pozicio = []
+    const nextPozicioId = store.pozicio.reduce((max, p) => Math.max(max, Number(p.pozicio_ID) || 0), 0) + 1
+    const animId = Number(animator_ID)
+    const posTitle = String(pozicio || '').trim()
+
+    const anim = (store.animators || []).find((a) => a.animator_ID === animId)
+    const newPos = {
+      pozicio_ID: nextPozicioId,
+      animator_ID: animId,
+      esemeny_ID: Number(eventId),
+      pozicio: posTitle,
+      animator_nev: anim?.nev || `Animátor #${animId}`
+    }
+
+    store.pozicio.push(newPos)
+    persistStore()
+    return { success: true, pozicio: newPos, message: 'Pozíció sikeresen hozzáadva.' }
+  },
+
+  updatePozicio(pozicio_ID, { animator_ID, pozicio }) {
+    if (!store.pozicio) store.pozicio = []
+    const posId = Number(pozicio_ID)
+    const animId = Number(animator_ID)
+    const posTitle = String(pozicio || '').trim()
+
+    const idx = store.pozicio.findIndex((p) => Number(p.pozicio_ID) === posId)
+    if (idx === -1) {
+      throw new Error(`Pozíció nem található (#${posId})`)
+    }
+
+    const anim = (store.animators || []).find((a) => a.animator_ID === animId)
+    store.pozicio[idx] = {
+      ...store.pozicio[idx],
+      animator_ID: animId,
+      pozicio: posTitle,
+      animator_nev: anim?.nev || `Animátor #${animId}`
+    }
+
+    persistStore()
+    return { success: true, pozicio: store.pozicio[idx], message: 'Pozíció sikeresen módosítva.' }
+  },
+
+  deletePozicio(pozicio_ID) {
+    if (!store.pozicio) store.pozicio = []
+    const posId = Number(pozicio_ID)
+    store.pozicio = store.pozicio.filter((p) => Number(p.pozicio_ID) !== posId)
+    persistStore()
+    return { success: true, message: 'Pozíció sikeresen törölve.' }
   },
 
 

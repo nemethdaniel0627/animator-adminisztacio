@@ -333,6 +333,100 @@ app.get('/api/events/:id/positions', async (req, res) => {
 })
 
 // --------------------------------------------------------------------------
+// 3.4 POST /api/events/:id/positions - Add position to an existing event
+// --------------------------------------------------------------------------
+app.post('/api/events/:id/positions', async (req, res) => {
+  const eventId = Number(req.params.id)
+  const { animator_ID, pozicio } = req.body || {}
+  const animId = Number(animator_ID)
+  const posTitle = String(pozicio || '').trim()
+
+  if (!eventId || !animId || !posTitle) {
+    return res.status(400).json({ message: 'Hiányzó adatok (esemény, animátor vagy pozíció).' })
+  }
+
+  try {
+    const [idRows] = await getPool().execute('SELECT COALESCE(MAX(pozicio_ID), 0) + 1 AS next_pos_id FROM pozicio')
+    const nextPosId = idRows[0].next_pos_id
+
+    await getPool().execute(
+      'INSERT INTO pozicio (pozicio_ID, animator_ID, esemeny_ID, pozicio) VALUES (?, ?, ?, ?)',
+      [nextPosId, animId, eventId, posTitle]
+    )
+
+    const [animRows] = await getPool().execute('SELECT nev FROM animator WHERE animator_ID = ?', [animId])
+    const animNev = animRows[0]?.nev || `Animátor #${animId}`
+
+    res.status(201).json({
+      success: true,
+      pozicio_ID: nextPosId,
+      animator_ID: animId,
+      esemeny_ID: eventId,
+      pozicio: posTitle,
+      animator_nev: animNev,
+      message: 'Pozíció sikeresen hozzáadva.'
+    })
+  } catch (err) {
+    console.error('Error adding event position:', err)
+    res.status(500).json({ message: 'Hiba a pozíció mentésekor.', error: err.message })
+  }
+})
+
+// --------------------------------------------------------------------------
+// 3.5 PUT /api/positions/:id - Update an existing position
+// --------------------------------------------------------------------------
+app.put('/api/positions/:id', async (req, res) => {
+  const posId = Number(req.params.id)
+  const { animator_ID, pozicio } = req.body || {}
+  const animId = Number(animator_ID)
+  const posTitle = String(pozicio || '').trim()
+
+  if (!posId || !animId || !posTitle) {
+    return res.status(400).json({ message: 'Hiányzó adatok.' })
+  }
+
+  try {
+    await getPool().execute(
+      'UPDATE pozicio SET animator_ID = ?, pozicio = ? WHERE pozicio_ID = ?',
+      [animId, posTitle, posId]
+    )
+
+    const [animRows] = await getPool().execute('SELECT nev FROM animator WHERE animator_ID = ?', [animId])
+    const animNev = animRows[0]?.nev || `Animátor #${animId}`
+
+    res.json({
+      success: true,
+      pozicio_ID: posId,
+      animator_ID: animId,
+      pozicio: posTitle,
+      animator_nev: animNev,
+      message: 'Pozíció sikeresen frissítve.'
+    })
+  } catch (err) {
+    console.error('Error updating position:', err)
+    res.status(500).json({ message: 'Hiba a pozíció frissítésekor.', error: err.message })
+  }
+})
+
+// --------------------------------------------------------------------------
+// 3.6 DELETE /api/positions/:id - Remove a position
+// --------------------------------------------------------------------------
+app.delete('/api/positions/:id', async (req, res) => {
+  const posId = Number(req.params.id)
+  if (!posId) {
+    return res.status(400).json({ message: 'Érvénytelen pozíció azonosító.' })
+  }
+
+  try {
+    await getPool().execute('DELETE FROM pozicio WHERE pozicio_ID = ?', [posId])
+    res.json({ success: true, message: 'Pozíció sikeresen törölve.' })
+  } catch (err) {
+    console.error('Error deleting position:', err)
+    res.status(500).json({ message: 'Hiba a pozíció törlésekor.', error: err.message })
+  }
+})
+
+// --------------------------------------------------------------------------
 // 3.3 GET /api/positions - Get all leadership positions
 // --------------------------------------------------------------------------
 app.get('/api/positions', async (req, res) => {

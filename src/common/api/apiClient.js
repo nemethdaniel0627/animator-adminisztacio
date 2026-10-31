@@ -141,6 +141,25 @@ async function handleMockRequest(method, endpoint, body = null) {
     return mockStore.getPoziciokByEvent(eventId)
   }
 
+  // POST /events/:id/positions
+  if (method === 'POST' && matchEventPositions) {
+    const eventId = Number(matchEventPositions[1])
+    return mockStore.addPozicio(eventId, body)
+  }
+
+  // PUT /positions/:id
+  const matchUpdatePosition = cleanEndpoint.match(/^\/positions\/(\d+)$/)
+  if (method === 'PUT' && matchUpdatePosition) {
+    const posId = Number(matchUpdatePosition[1])
+    return mockStore.updatePozicio(posId, body)
+  }
+
+  // DELETE /positions/:id
+  if (method === 'DELETE' && matchUpdatePosition) {
+    const posId = Number(matchUpdatePosition[1])
+    return mockStore.deletePozicio(posId)
+  }
+
   // DELETE /attendances/:id
   const matchDeleteAttendance = cleanEndpoint.match(/^\/attendances\/(\d+)$/)
   if (method === 'DELETE' && matchDeleteAttendance) {
@@ -241,6 +260,18 @@ export const apiClient = {
 
   async getPositions() {
     return this.get('/api/positions')
+  },
+
+  async addEventPosition(eventId, payload) {
+    return this.post(`/api/events/${eventId}/positions`, payload)
+  },
+
+  async updatePosition(pozicioId, payload) {
+    return this.put(`/api/positions/${pozicioId}`, payload)
+  },
+
+  async deletePosition(pozicioId) {
+    return this.delete(`/api/positions/${pozicioId}`)
   },
 
   async getStatuszujitasConfig() {
