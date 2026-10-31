@@ -67,6 +67,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/timeline/:animatorId"
+        element={
+          <RequireAuth>
+            <TimelineView />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <RequireAuth>

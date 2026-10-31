@@ -8,8 +8,8 @@ import { mockStore } from './mockData.js'
 // Defaults to true (Mock Mode) unless explicitly set to 'false'
 const IS_MOCK_MODE =
   typeof import.meta !== 'undefined' &&
-  import.meta.env &&
-  import.meta.env.VITE_USE_MOCK === 'false'
+    import.meta.env &&
+    import.meta.env.VITE_USE_MOCK === 'false'
     ? false
     : true
 
@@ -39,7 +39,7 @@ async function handleMockRequest(method, endpoint, body = null) {
     return mockStore.createEvent(body)
   }
 
-  
+
   // Státuszújítás Endpoints
   if (method === 'GET' && cleanEndpoint === '/statuszujitas/config') {
     return mockStore.getStatuszujitasConfig()

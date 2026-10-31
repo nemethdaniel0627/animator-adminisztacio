@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { animatorService } from '../szolgaltatas/animatorService.js'
-import { Search, ChevronDown, ArrowUpDown, Mail, Phone, Users } from 'lucide-react'
+import { useAuth } from '../../../common/context/AuthContext.jsx'
+import { Search, ChevronDown, ArrowUpDown, Mail, Phone, Users, Clock } from 'lucide-react'
 
 export default function AnimatorList() {
+  const { isAdmin } = useAuth()
+  const navigate = useNavigate()
   const [animators, setAnimators] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -203,9 +207,14 @@ export default function AnimatorList() {
           )}
         </div>
 
-        {/* Counter */}
-        <div style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-          {filteredAndSortedAnimators.length} tag
+        {/* Counter & Hint */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+          {isAdmin && (
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+              (Kattints egy sorra az idővonal megtekintéséhez)
+            </span>
+          )}
+          <span>{filteredAndSortedAnimators.length} tag</span>
         </div>
       </div>
 
@@ -236,7 +245,19 @@ export default function AnimatorList() {
               </tr>
             ) : (
               filteredAndSortedAnimators.map((animator) => (
-                <tr key={animator.animator_ID}>
+                <tr
+                  key={animator.animator_ID}
+                  onClick={() => {
+                    if (isAdmin) {
+                      navigate(`/timeline?animatorId=${animator.animator_ID}`)
+                    }
+                  }}
+                  style={{
+                    cursor: isAdmin ? 'pointer' : 'default',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  title={isAdmin ? `${animator.nev} idővonalának megtekintése` : undefined}
+                >
                   <td style={{ fontWeight: 600 }}>{animator.nev}</td>
                   <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
                     {animator.email || '-'}

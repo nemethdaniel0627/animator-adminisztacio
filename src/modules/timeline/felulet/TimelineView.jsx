@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   GraduationCap,
   MessageSquare,
@@ -6,7 +7,9 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
-  Check
+  Check,
+  ArrowLeft,
+  UserCheck
 } from 'lucide-react'
 import { eventService } from '../../events/szolgaltatas/eventService.js'
 import { apiClient } from '../../../common/api/apiClient.js'
@@ -47,23 +50,49 @@ function PaperPlaneIcon({ size = 16, color = 'currentColor', ...props }) {
 }
 
 export default function TimelineView() {
-  const { currentUser } = useAuth()
+  const { currentUser, isAdmin } = useAuth()
+  const navigate = useNavigate()
+  const { animatorId: paramId } = useParams()
+  const [searchParams] = useSearchParams()
+  const queryId = searchParams.get('animatorId')
+  const requestedId = paramId || queryId
+
+  const [targetAnimator, setTargetAnimator] = useState(null)
   const [events, setEvents] = useState([])
   const [positions, setPositions] = useState([])
   const [loading, setLoading] = useState(true)
   const [isMobileStatsExpanded, setIsMobileStatsExpanded] = useState(true)
   const [attendances, setAttendances] = useState([])
 
+  const isViewingOther = Boolean(requestedId && isAdmin && Number(requestedId) !== Number(currentUser?.animator_ID))
+  const activeUser = isViewingOther ? targetAnimator : currentUser
+
   const loadData = async () => {
     try {
       setLoading(true)
+
+      let activeId = currentUser?.animator_ID
+      let foundTarget = null
+
+      if (requestedId && isAdmin) {
+        const animators = await apiClient.get('/api/animators').catch(() => [])
+        foundTarget = (animators || []).find((a) => Number(a.animator_ID) === Number(requestedId))
+        if (foundTarget) {
+          setTargetAnimator(foundTarget)
+          activeId = foundTarget.animator_ID
+        }
+      } else {
+        setTargetAnimator(null)
+      }
+
       const [list, posList, attList] = await Promise.all([
         eventService.getEvents(),
         apiClient.getPositions().catch(() => []),
-        currentUser?.animator_ID
-          ? apiClient.getAnimatorAttendances(currentUser.animator_ID).catch(() => [])
+        activeId
+          ? apiClient.getAnimatorAttendances(activeId).catch(() => [])
           : Promise.resolve([])
       ])
+
       // Sort chronologically descending
       const sorted = [...list].sort((a, b) => new Date(b.datum) - new Date(a.datum))
       setEvents(sorted)
@@ -78,7 +107,7 @@ export default function TimelineView() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [requestedId, currentUser?.animator_ID])
 
   // Node icon and style based on event item
   const getNodeConfig = (ev) => {
@@ -159,7 +188,7 @@ export default function TimelineView() {
     }
   }
 
-  // Set of events attended by the logged-in user
+  // Set of events attended by the active user
   const myAttendedEventIds = new Set(attendances.map((a) => Number(a.esemeny_ID)))
 
   // Calculate dynamic stats for newly recorded events beyond baseline seed
@@ -182,6 +211,42 @@ export default function TimelineView() {
     }
   })
 
+  // Attendance counts for 2026 events
+  const events2026 = events.filter((e) => (e.datum || '').startsWith('2026'))
+  const totalKgy2026 = events2026.filter((e) => {
+    const t = (e.tipus || '').toLowerCase()
+    const c = (e.cim || '').toLowerCase()
+    return t.includes('közgyűlés') || t.includes('kozgyules') || c.includes('közgyűlés') || c.includes('kozgyules')
+  }).length
+
+  const attendedKgy2026 = events2026.filter((e) => {
+    const t = (e.tipus || '').toLowerCase()
+    const c = (e.cim || '').toLowerCase()
+    return (t.includes('közgyűlés') || t.includes('kozgyules') || c.includes('közgyűlés') || c.includes('kozgyules')) && myAttendedEventIds.has(Number(e.esemeny_ID))
+  }).length
+
+  const attendedNagy2026 = events2026.filter((e) => {
+    const t = (e.tipus || '').toLowerCase()
+    return (t.includes('nagyrendezvény') || t.includes('nagyrendezveny')) && myAttendedEventIds.has(Number(e.esemeny_ID))
+  }).length
+
+  const attendedEgyetemi2026 = events2026.filter((e) => {
+    const t = (e.tipus || '').toLowerCase()
+    return t.includes('egyetemi') && myAttendedEventIds.has(Number(e.esemeny_ID))
+  }).length
+
+  const totalTrening2026 = events2026.filter((e) => (e.tipus || '').toLowerCase().includes('tréning')).length
+  const attendedTrening2026 = events2026.filter((e) => {
+    const t = (e.tipus || '').toLowerCase()
+    return t.includes('tréning') && myAttendedEventIds.has(Number(e.esemeny_ID))
+  }).length
+
+  // All-time attendance counts
+  const allAttendedNagy = attendances.filter((a) => (a.tipus || '').toLowerCase().includes('nagyrendezvény') || (a.tipus || '').toLowerCase().includes('nagyrendezveny')).length
+  const allAttendedEgyetemi = attendances.filter((a) => (a.tipus || '').toLowerCase().includes('egyetemi')).length
+  const allAttendedTrening = attendances.filter((a) => (a.tipus || '').toLowerCase().includes('tréning')).length
+  const allAttendedKgy = attendances.filter((a) => (a.tipus || '').toLowerCase().includes('közgyűlés') || (a.tipus || '').toLowerCase().includes('kozgyules')).length
+
   // Format date to Hungary format: 2026.10.13.
   const formatDate = (dateStr) => {
     if (!dateStr) return ''
@@ -195,12 +260,61 @@ export default function TimelineView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner matching original portal screenshot */}
-      <div>
-        <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-          Idővonal
-        </h1>
-      </div>
+      {/* Top Banner */}
+      {isViewingOther ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                Idővonal: {activeUser?.nev || 'Animátor'}
+              </h1>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '3px 10px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: '#38bdf8',
+                  fontWeight: 600
+                }}
+              >
+                Admin nézet
+              </span>
+            </div>
+            <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+              {activeUser?.email || ''} {activeUser?.telefonszam ? `• ${activeUser.telefonszam}` : ''}
+              {activeUser?.statusz ? ` • ${activeUser.statusz}` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/animators')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <ArrowLeft size={16} />
+            <span>Vissza a taglistához</span>
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+            Idővonal
+          </h1>
+        </div>
+      )}
 
       {/* Two Column Layout matching screenshot on PC, responsive stack on Mobile */}
       <div className="timeline-layout">
@@ -222,51 +336,65 @@ export default function TimelineView() {
           </div>
 
           <div className={`stats-container ${isMobileStatsExpanded ? 'expanded' : ''}`}>
-            {/* Card 1: 2026. animátor-évi jelenléteid */}
+            {/* Card 1: 2026. animátor-évi jelenlétek */}
             <div className="stats-card">
-              <div className="stats-card-header">2026. animátor-évi jelenléteid:</div>
+              <div className="stats-card-header">
+                {isViewingOther
+                  ? `${activeUser?.nev || 'Animátor'} 2026. évi jelenlétei:`
+                  : '2026. animátor-évi jelenléteid:'}
+              </div>
               <table className="stats-table">
                 <tbody>
                   <tr>
                     <td>Nagyrendezvények:</td>
-                    <td className="stats-value">3</td>
+                    <td className="stats-value">{isViewingOther ? attendedNagy2026 : 3}</td>
                   </tr>
                   <tr>
                     <td>Egyetemi rendezvények:</td>
-                    <td className="stats-value">0</td>
+                    <td className="stats-value">{isViewingOther ? attendedEgyetemi2026 : 0}</td>
                   </tr>
                   <tr>
                     <td>Tréningek:</td>
-                    <td className="stats-value">2/3</td>
+                    <td className="stats-value">
+                      {isViewingOther ? `${attendedTrening2026}/${totalTrening2026 || 3}` : '2/3'}
+                    </td>
                   </tr>
                   <tr>
                     <td>Közgyűlések:</td>
-                    <td className="stats-value">{3 + newKgyAttended}/{4 + newKgyTotal}</td>
+                    <td className="stats-value">
+                      {isViewingOther
+                        ? `${attendedKgy2026}/${totalKgy2026 || 4}`
+                        : `${3 + newKgyAttended}/${4 + newKgyTotal}`}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Card 2: Összesített jelenléteid */}
+            {/* Card 2: Összesített jelenlétek */}
             <div className="stats-card">
-              <div className="stats-card-header">Összesített jelenléteid:</div>
+              <div className="stats-card-header">
+                {isViewingOther
+                  ? `${activeUser?.nev || 'Animátor'} összesített jelenlétei:`
+                  : 'Összesített jelenléteid:'}
+              </div>
               <table className="stats-table">
                 <tbody>
                   <tr>
                     <td>Nagyrendezvények:</td>
-                    <td className="stats-value">12</td>
+                    <td className="stats-value">{isViewingOther ? allAttendedNagy : 12}</td>
                   </tr>
                   <tr>
                     <td>Egyetemi rendezvények:</td>
-                    <td className="stats-value">7</td>
+                    <td className="stats-value">{isViewingOther ? allAttendedEgyetemi : 7}</td>
                   </tr>
                   <tr>
                     <td>Tréningek:</td>
-                    <td className="stats-value">6</td>
+                    <td className="stats-value">{isViewingOther ? allAttendedTrening : 6}</td>
                   </tr>
                   <tr>
                     <td>Közgyűlések:</td>
-                    <td className="stats-value">{12 + newKgyAttended}</td>
+                    <td className="stats-value">{isViewingOther ? allAttendedKgy : 12 + newKgyAttended}</td>
                   </tr>
                 </tbody>
               </table>
@@ -298,12 +426,12 @@ export default function TimelineView() {
                 // Position subtitle is strictly for Tisztújítás events, never on standard/tisztújító közgyűlés
                 const userPos = !isKozgyules
                   ? positions.find(
-                      (p) => Number(p.esemeny_ID) === Number(ev.esemeny_ID) && Number(p.animator_ID) === Number(currentUser?.animator_ID)
+                      (p) => Number(p.esemeny_ID) === Number(ev.esemeny_ID) && Number(p.animator_ID) === Number(activeUser?.animator_ID)
                     )
                   : null
 
                 const subtitleText = userPos
-                  ? `Pozíciód: ${userPos.pozicio}`
+                  ? (isViewingOther ? `Pozíciója: ${userPos.pozicio}` : `Pozíciód: ${userPos.pozicio}`)
                   : ev.subtitle || null
 
                 return (
