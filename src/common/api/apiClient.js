@@ -117,6 +117,16 @@ async function handleMockRequest(method, endpoint, body = null) {
     return mockStore.getStats()
   }
 
+  // GET /kgy/state
+  if (method === 'GET' && cleanEndpoint === '/kgy/state') {
+    return {
+      isAttendanceActive: true,
+      isSummaryActive: false,
+      attendees: [1001],
+      polls: []
+    }
+  }
+
   // GET /permissions/:id
   const matchPermission = cleanEndpoint.match(/^\/permissions\/(\d+)$/)
   if (method === 'GET' && matchPermission) {

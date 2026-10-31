@@ -721,6 +721,51 @@ app.post('/api/statuszujitas/decision/:id', (req, res) => {
 })
 
 // --------------------------------------------------------------------------
+// Közgyűlés Live State Management (/api/kgy/state)
+// --------------------------------------------------------------------------
+const KGY_FILE = join(__dirname, 'kgy_state.json')
+
+let kgyState = {
+  isAttendanceActive: true,
+  isSummaryActive: false,
+  attendees: [1001],
+  polls: [
+    {
+      id: 1,
+      title: 'asd',
+      options: ['Igen'],
+      status: 'deactivated',
+      votes: {}
+    }
+  ]
+}
+
+// Load existing kgy_state.json if available
+try {
+  if (fs.existsSync(KGY_FILE)) {
+    kgyState = JSON.parse(fs.readFileSync(KGY_FILE, 'utf8'))
+  }
+} catch (e) {
+  console.error('Error reading kgy_state.json:', e)
+}
+
+app.get('/api/kgy/state', (req, res) => {
+  res.json(kgyState)
+})
+
+app.post('/api/kgy/state', (req, res) => {
+  if (req.body && typeof req.body === 'object') {
+    kgyState = req.body
+    try {
+      fs.writeFileSync(KGY_FILE, JSON.stringify(kgyState, null, 2), 'utf8')
+    } catch (e) {
+      // State remains in memory if filesystem is read-only
+    }
+  }
+  res.json(kgyState)
+})
+
+// --------------------------------------------------------------------------
 // Health & Diagnostic Endpoints (Google Cloud Run / Load Balancer)
 // --------------------------------------------------------------------------
 app.get('/health', (req, res) => {
