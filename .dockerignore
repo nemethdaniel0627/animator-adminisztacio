@@ -1,0 +1,42 @@
+# ==============================================================================
+# Docker Ignore Configuration - Animátor Adminisztráció
+# ==============================================================================
+
+# Version control
+.git/
+.gitignore
+
+# Dependencies (installed fresh inside the container)
+node_modules/
+server/node_modules/
+
+# Local build artifacts
+dist/
+dist-ssr/
+build/
+
+# Local environment & secret files (never bake secrets into docker image!)
+.env
+.env.*
+*.env
+server/.env
+server/.env.*
+
+# Local certificate private keys
+server/certs/*.key
+
+# Server runtime state & logs
+server/*_state.json
+*.log
+logs/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documentation & Test scripts not needed in image
+*.md
+scripts/ui-test*
+

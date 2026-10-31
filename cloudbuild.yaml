@@ -1,0 +1,47 @@
+# ==============================================================================
+# Google Cloud Build Pipeline for Animátor Adminisztráció
+# Builds multi-stage Docker container and deploys to Google Cloud Run
+# ==============================================================================
+
+steps:
+  # 1. Build Docker image with Cloud Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/animator-admin:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/animator-admin:latest'
+      - '.'
+
+  # 2. Push image to Google Container / Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/animator-admin:$COMMIT_SHA'
+
+  # 3. Deploy image to Google Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'animator-admin'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/animator-admin:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/animator-admin:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/animator-admin:latest'
+
+timeout: '1200s'
+options:
+  logging: CLOUD_LOGGING_ONLY
+

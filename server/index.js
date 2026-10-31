@@ -36,20 +36,28 @@ const VALID_EVENT_TYPES = [
 
 // SSL / TLS Certificate handling (e.g. for TiDB Cloud or Aiven)
 let sslConfig = null
-const rawCaPath = process.env.DB_SSL_CA || (fs.existsSync(join(__dirname, 'certs/isrgrootx1.pem')) ? 'certs/isrgrootx1.pem' : null)
-if (rawCaPath) {
-  const resolvedCa = isAbsolute(rawCaPath) ? rawCaPath : resolve(__dirname, rawCaPath)
-  if (fs.existsSync(resolvedCa)) {
+if (process.env.DB_SSL_CA_CONTENT) {
+  sslConfig = {
+    ca: process.env.DB_SSL_CA_CONTENT,
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  }
+} else {
+  const rawCaPath = process.env.DB_SSL_CA || (fs.existsSync(join(__dirname, 'certs/isrgrootx1.pem')) ? 'certs/isrgrootx1.pem' : null)
+  if (rawCaPath) {
+    const resolvedCa = isAbsolute(rawCaPath) ? rawCaPath : resolve(__dirname, rawCaPath)
+    if (fs.existsSync(resolvedCa)) {
+      sslConfig = {
+        ca: fs.readFileSync(resolvedCa),
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+      }
+    }
+  } else if (process.env.DB_SSL === 'true') {
     sslConfig = {
-      ca: fs.readFileSync(resolvedCa),
       minVersion: 'TLSv1.2',
       rejectUnauthorized: true
     }
-  }
-} else if (process.env.DB_SSL === 'true') {
-  sslConfig = {
-    minVersion: 'TLSv1.2',
-    rejectUnauthorized: true
   }
 }
 
@@ -610,6 +618,80 @@ app.post('/api/statuszujitas/decision/:id', (req, res) => {
   res.json({ success: true, message: 'Státusz sikeresen jóváhagyva.' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Animator Admin API Server running on port ${PORT}`)
+// --------------------------------------------------------------------------
+// Health & Diagnostic Endpoints (Google Cloud Run / Load Balancer)
+// --------------------------------------------------------------------------
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() })
+})
+
+// --------------------------------------------------------------------------
+// User Profile & Activity Stats Endpoints
+// --------------------------------------------------------------------------
+app.get('/api/profile', async (req, res) => {
+  try {
+    const [rows] = await getPool().query('SELECT nev, email, telefonszam FROM animator WHERE animator_ID = 1001 LIMIT 1')
+    if (rows && rows.length > 0) {
+      return res.json({
+        nev: rows[0].nev,
+        email: rows[0].email,
+        telefon: rows[0].telefonszam,
+        avatarUrl: ''
+      })
+    }
+  } catch {}
+  res.json({
+    nev: 'Németh Dániel',
+    email: 'nem.dani0627@gmail.com',
+    telefon: '+36 308-334589',
+    avatarUrl: ''
+  })
+})
+
+app.post('/api/profile', async (req, res) => {
+  const { nev, email, telefon } = req.body || {}
+  try {
+    if (nev || email || telefon) {
+      await getPool().query(
+        'UPDATE animator SET nev = COALESCE(?, nev), email = COALESCE(?, email), telefonszam = COALESCE(?, telefonszam) WHERE animator_ID = 1001',
+        [nev || null, email || null, telefon || null]
+      )
+    }
+  } catch {}
+  res.json({ success: true, nev, email, telefon })
+})
+
+app.get('/api/stats', (req, res) => {
+  res.json({
+    stats2026: { nagyrendezveny: 3, egyetemi: 0, trening: '2/3', kozgyules: '3/4' },
+    statsTotal: { nagyrendezveny: 12, egyetemi: 7, trening: 6, kozgyules: 12 }
+  })
+})
+
+// --------------------------------------------------------------------------
+// Production Static Frontend & SPA Fallback (Google Cloud Run)
+// --------------------------------------------------------------------------
+const clientDistPath =
+  process.env.CLIENT_DIST ||
+  (fs.existsSync(join(__dirname, '../dist')) ? join(__dirname, '../dist') : join(__dirname, 'dist'))
+
+if (fs.existsSync(clientDistPath)) {
+  console.log(`Serving static frontend from: ${clientDistPath}`)
+  app.use(express.static(clientDistPath))
+
+  // SPA fallback for client-side routing on all non-API paths
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next()
+    }
+    // Prevent fallback for missing static files (e.g. .js, .css, .png)
+    if (req.path.includes('.') && !req.path.endsWith('.html')) {
+      return res.status(404).end()
+    }
+    res.sendFile(join(clientDistPath, 'index.html'))
+  })
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Animator Admin API Server running on port ${PORT} (0.0.0.0)`)
 })
