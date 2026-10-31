@@ -115,6 +115,7 @@ export default function LoginView() {
                   required
                   autoFocus
                   className="login-input"
+                  style={{ paddingLeft: '42px' }}
                 />
                 <User size={18} className="login-input-icon" />
               </div>
@@ -133,6 +134,7 @@ export default function LoginView() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="login-input"
+                  style={{ paddingLeft: '42px' }}
                 />
                 <Key size={18} className="login-input-icon" />
               </div>
