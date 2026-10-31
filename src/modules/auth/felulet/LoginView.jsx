@@ -69,22 +69,12 @@ export default function LoginView() {
         </div>
 
         {/* Login Card */}
-        <div
-          style={{
-            width: '100%',
-            backgroundColor: 'var(--color-surface, #111827)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '32px 28px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
-            boxSizing: 'border-box'
-          }}
-        >
+        <div className="login-card">
           <div style={{ marginBottom: '24px' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 6px', color: '#ffffff' }}>
+            <h1 className="login-title">
               Bejelentkezés
             </h1>
-            <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+            <p className="login-subtitle">
               Lépj be a regisztrált egyetemi azonosítóddal vagy e-mail címeddel.
             </p>
           </div>
@@ -95,9 +85,9 @@ export default function LoginView() {
                 marginBottom: '20px',
                 padding: '12px 14px',
                 borderRadius: '8px',
-                backgroundColor: 'rgba(220, 38, 38, 0.15)',
-                border: '1px solid rgba(220, 38, 38, 0.3)',
-                color: '#fca5a5',
+                backgroundColor: 'var(--color-danger-bg, rgba(220, 38, 38, 0.15))',
+                border: '1px solid var(--color-danger-border, rgba(220, 38, 38, 0.3))',
+                color: 'var(--color-danger-text, #ef4444)',
                 fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
@@ -112,16 +102,7 @@ export default function LoginView() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             {/* Username / Shibboleth input */}
             <div>
-              <label
-                htmlFor="identifier"
-                style={{
-                  display: 'block',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  marginBottom: '6px',
-                  color: '#cbd5e1'
-                }}
-              >
+              <label htmlFor="identifier" className="login-label">
                 Azonosító / Shibboleth vagy E-mail
               </label>
               <div style={{ position: 'relative' }}>
@@ -133,43 +114,15 @@ export default function LoginView() {
                   placeholder="pl. tesel vagy email"
                   required
                   autoFocus
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 40px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    color: '#ffffff',
-                    fontSize: '0.9375rem',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
+                  className="login-input"
                 />
-                <User
-                  size={18}
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#64748b'
-                  }}
-                />
+                <User size={18} className="login-input-icon" />
               </div>
             </div>
 
             {/* Password input */}
             <div>
-              <label
-                htmlFor="password"
-                style={{
-                  display: 'block',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  marginBottom: '6px',
-                  color: '#cbd5e1'
-                }}
-              >
+              <label htmlFor="password" className="login-label">
                 Jelszó
               </label>
               <div style={{ position: 'relative' }}>
@@ -179,28 +132,9 @@ export default function LoginView() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 40px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    color: '#ffffff',
-                    fontSize: '0.9375rem',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
+                  className="login-input"
                 />
-                <Key
-                  size={18}
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#64748b'
-                  }}
-                />
+                <Key size={18} className="login-input-icon" />
               </div>
             </div>
 
@@ -231,19 +165,8 @@ export default function LoginView() {
           </form>
 
           {/* Shibboleth SSO Integration Notice */}
-          <div
-            style={{
-              marginTop: '24px',
-              paddingTop: '16px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              fontSize: '0.8125rem',
-              color: '#94a3b8'
-            }}
-          >
-            <Shield size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="login-notice">
+            <Shield size={16} color="#0284c7" style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>
               <strong>Egyetemi Shibboleth azonosítás:</strong> A rendszer a Pázmány ITK központi Shibboleth címtárával működik.
             </span>

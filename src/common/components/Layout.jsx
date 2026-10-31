@@ -385,7 +385,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Content Container */}
-        <main style={{ flex: 1, padding: '24px', maxWidth: '1280px', width: '100%', boxSizing: 'border-box' }}>
+        <main className="portal-content">
           {children}
         </main>
       </div>

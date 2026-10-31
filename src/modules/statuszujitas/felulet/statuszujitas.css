@@ -118,12 +118,50 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-sm);
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 24px;
+}
+
+.statusz-admin-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.statusz-admin-table-container::-webkit-scrollbar-track {
+  background: var(--color-surface-hover);
+  border-radius: 4px;
+}
+
+.statusz-admin-table-container::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.statusz-admin-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+.statusz-mobile-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .statusz-mobile-scroll-hint {
+    display: flex;
+  }
 }
 
 .statusz-table {
   width: 100%;
+  min-width: 780px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -136,6 +174,7 @@
   padding: 14px 16px;
   border-bottom: 2px solid var(--color-border);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .statusz-table td {
@@ -166,6 +205,7 @@
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .statusz-dropdown {

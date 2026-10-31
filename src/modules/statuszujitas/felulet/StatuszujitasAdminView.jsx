@@ -12,7 +12,8 @@ import {
   Save,
   Check,
   Clock,
-  Sparkles
+  Sparkles,
+  MoveHorizontal
 } from 'lucide-react'
 import { statuszujitasService } from '../szolgaltatas/statuszujitasService.js'
 import { STATUSZ_OPTIONS, isStatuszujitasPeriodActive } from '../modell/statuszujitasModels.js'
@@ -172,7 +173,7 @@ export default function StatuszujitasAdminView() {
   const failedCount = kerelmek.filter((k) => k.hasSubmitted && !k.evaluation?.passed).length
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%', minWidth: 0 }}>
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -388,15 +389,21 @@ export default function StatuszujitasAdminView() {
         </div>
       </div>
 
+      {/* Mobile Scroll Hint */}
+      <div className="statusz-mobile-scroll-hint">
+        <MoveHorizontal size={14} />
+        <span>Vízszintesen görgethető táblázat</span>
+      </div>
+
       {/* Main Table Matching User Screenshot */}
       <div className="statusz-admin-table-container">
         <table className="statusz-table">
           <thead>
             <tr>
-              <th style={{ width: '22%' }}>Név</th>
-              <th style={{ width: '18%' }}>Igényelt státusz</th>
-              <th style={{ width: '38%' }}>Nem teljesülő feltételek a kérelem beküldésekor</th>
-              <th style={{ width: '22%', textAlign: 'right' }}>
+              <th style={{ width: '22%', minWidth: '160px' }}>Név</th>
+              <th style={{ width: '18%', minWidth: '140px' }}>Igényelt státusz</th>
+              <th style={{ width: '38%', minWidth: '260px' }}>Nem teljesülő feltételek a kérelem beküldésekor</th>
+              <th style={{ width: '22%', minWidth: '220px', textAlign: 'right' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <span>Megadni kívánt státusz kiválasztása</span>
                   <span
