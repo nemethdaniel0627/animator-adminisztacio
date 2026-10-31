@@ -1,0 +1,255 @@
+import { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { LogIn, Key, User, Shield, Info, AlertCircle, CheckCircle2 } from 'lucide-react'
+import BrandLogo from '../../../common/components/BrandLogo.jsx'
+import { useAuth } from '../../../common/context/AuthContext.jsx'
+
+export default function LoginView() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // Redirect target after login (default /timeline)
+  const queryParams = new URLSearchParams(location.search)
+  const redirectTo = queryParams.get('redirect') || '/timeline'
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!identifier.trim()) {
+      setError('Kérjük add meg az azonosítódat vagy e-mail címedet.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      await login(identifier, password)
+      navigate(redirectTo, { replace: true })
+    } catch (err) {
+      setError(err.message || 'Sikertelen bejelentkezés.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#060E20',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 16px',
+        color: '#ffffff',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
+      >
+        {/* Brand Header */}
+        <div style={{ marginBottom: '28px', textAlign: 'center' }}>
+          <BrandLogo size={52} showText={true} color="#ffffff" />
+          <p style={{ margin: '8px 0 0', fontSize: '0.875rem', color: '#94a3b8' }}>
+            Pázmány ITK Animátor Közösség Adminisztrációs Rendszer
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div
+          style={{
+            width: '100%',
+            backgroundColor: 'var(--color-surface, #111827)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '32px 28px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 6px', color: '#ffffff' }}>
+              Bejelentkezés
+            </h1>
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+              Lépj be a regisztrált egyetemi azonosítóddal vagy e-mail címeddel.
+            </p>
+          </div>
+
+          {error && (
+            <div
+              style={{
+                marginBottom: '20px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(220, 38, 38, 0.15)',
+                border: '1px solid rgba(220, 38, 38, 0.3)',
+                color: '#fca5a5',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}
+            >
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* Username / Shibboleth input */}
+            <div>
+              <label
+                htmlFor="identifier"
+                style={{
+                  display: 'block',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  marginBottom: '6px',
+                  color: '#cbd5e1'
+                }}
+              >
+                Azonosító / Shibboleth vagy E-mail
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="pl. tesel vagy email"
+                  required
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px 12px 40px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    fontSize: '0.9375rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <User
+                  size={18}
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#64748b'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Password input */}
+            <div>
+              <label
+                htmlFor="password"
+                style={{
+                  display: 'block',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  marginBottom: '6px',
+                  color: '#cbd5e1'
+                }}
+              >
+                Jelszó
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px 12px 40px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    fontSize: '0.9375rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <Key
+                  size={18}
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#64748b'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: '6px',
+                padding: '12px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '1rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              <LogIn size={18} />
+              <span>{loading ? 'Bejelentkezés...' : 'Bejelentkezés'}</span>
+            </button>
+          </form>
+
+          {/* Shibboleth SSO Integration Notice */}
+          <div
+            style={{
+              marginTop: '24px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              fontSize: '0.8125rem',
+              color: '#94a3b8'
+            }}
+          >
+            <Shield size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>
+              <strong>Egyetemi Shibboleth azonosítás:</strong> A rendszer a Pázmány ITK központi Shibboleth címtárával működik.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
