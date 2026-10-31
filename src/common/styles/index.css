@@ -945,7 +945,7 @@ textarea:focus {
     padding: 0 16px;
   }
   .portal-topbar-title {
-    font-size: 1.25rem;
+    display: none;
   }
 }
 

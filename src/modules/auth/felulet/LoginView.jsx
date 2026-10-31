@@ -64,7 +64,7 @@ export default function LoginView() {
         <div style={{ marginBottom: '28px', textAlign: 'center' }}>
           <BrandLogo size={52} showText={true} color="#ffffff" />
           <p style={{ margin: '8px 0 0', fontSize: '0.875rem', color: '#94a3b8' }}>
-            Pázmány ITK Animátor Közösség Adminisztrációs Rendszer
+            Pázmány ITK Animátor Közösség oldala
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function LoginView() {
               Bejelentkezés
             </h1>
             <p className="login-subtitle">
-              Lépj be a regisztrált egyetemi azonosítóddal vagy e-mail címeddel.
+              Lépj be a regisztrált egyetemi azonosítóddal.
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export default function LoginView() {
             {/* Username / Shibboleth input */}
             <div>
               <label htmlFor="identifier" className="login-label">
-                Azonosító / Shibboleth vagy E-mail
+                Azonosító / Shibboleth
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -111,7 +111,7 @@ export default function LoginView() {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="pl. tesel vagy email"
+                  placeholder="pl. tesel"
                   required
                   autoFocus
                   className="login-input"
