@@ -111,14 +111,15 @@ export default function StatuszujitasAdminView() {
         String(row.animator_ID || '').includes(q)
 
       let matchesFilter = true
+      const hasValidSubmission = row.hasSubmitted && Boolean(row.igenyelt_statusz)
       if (statusFilter === 'SUBMITTED') {
-        matchesFilter = row.hasSubmitted
+        matchesFilter = hasValidSubmission
       } else if (statusFilter === 'NOT_SUBMITTED') {
-        matchesFilter = !row.hasSubmitted
+        matchesFilter = !hasValidSubmission
       } else if (statusFilter === 'FAILED') {
-        matchesFilter = row.hasSubmitted && !row.evaluation?.passed
+        matchesFilter = hasValidSubmission && !row.evaluation?.passed
       } else if (statusFilter === 'PASSED') {
-        matchesFilter = row.hasSubmitted && row.evaluation?.passed
+        matchesFilter = hasValidSubmission && row.evaluation?.passed
       }
 
       return matchesSearch && matchesFilter
@@ -183,10 +184,10 @@ export default function StatuszujitasAdminView() {
 
   // Counts for statistics
   const totalCount = kerelmek.length
-  const submittedCount = kerelmek.filter((k) => k.hasSubmitted).length
+  const submittedCount = kerelmek.filter((k) => k.hasSubmitted && k.igenyelt_statusz).length
   const notSubmittedCount = totalCount - submittedCount
-  const passedCount = kerelmek.filter((k) => k.hasSubmitted && k.evaluation?.passed).length
-  const failedCount = kerelmek.filter((k) => k.hasSubmitted && !k.evaluation?.passed).length
+  const passedCount = kerelmek.filter((k) => k.hasSubmitted && k.igenyelt_statusz && k.evaluation?.passed).length
+  const failedCount = kerelmek.filter((k) => k.hasSubmitted && k.igenyelt_statusz && !k.evaluation?.passed).length
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%', minWidth: 0 }}>
@@ -463,7 +464,7 @@ export default function StatuszujitasAdminView() {
 
                     {/* 2. Igényelt státusz */}
                     <td>
-                      {row.hasSubmitted ? (
+                      {row.hasSubmitted && row.igenyelt_statusz ? (
                         <div>
                           <span
                             style={{
@@ -516,7 +517,7 @@ export default function StatuszujitasAdminView() {
 
                     {/* 3. Nem teljesülő feltételek a kérelem beküldésekor */}
                     <td>
-                      {!row.hasSubmitted ? (
+                      {!row.hasSubmitted || !row.igenyelt_statusz ? (
                         <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
                           —
                         </span>

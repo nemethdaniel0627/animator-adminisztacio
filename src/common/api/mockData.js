@@ -406,6 +406,13 @@ function loadStore() {
         }
         if (!parsed.statuszujitasKerelmek || !Array.isArray(parsed.statuszujitasKerelmek)) {
           parsed.statuszujitasKerelmek = JSON.parse(JSON.stringify(INITIAL_DATA.statuszujitasKerelmek))
+        } else {
+          parsed.statuszujitasKerelmek = parsed.statuszujitasKerelmek.map((k) => {
+            if (k.indoklas === 'Adminisztrátori közvetlen státuszmegadás') {
+              return { ...k, indoklas: '' }
+            }
+            return k
+          })
         }
 
         // Ensure every user except Németh Dániel is a basic aktív user with password test1234
@@ -809,7 +816,7 @@ export const mockStore = {
         email: animator.email,
         jelenlegi_statusz: animator.statusz,
         kategoria: animator.kategoria,
-        hasSubmitted: Boolean(req),
+        hasSubmitted: Boolean(req && (req.submittedAt || req.igenyelt_statusz)),
         kerelem_ID: req?.kerelem_ID || null,
         igenyelt_statusz: req?.igenyelt_statusz || null, // null renders "Nem igényelt státuszt"
         submittedAt: req?.submittedAt || null,
@@ -951,7 +958,7 @@ export const mockStore = {
         kerelem_ID: nextId,
         animator_ID: numericId,
         igenyelt_statusz: null,
-        indoklas: 'Adminisztrátori közvetlen státuszmegadás',
+        indoklas: '',
         submittedAt: null,
         status: 'elbirálva',
         megadott_statusz: validChoice,
