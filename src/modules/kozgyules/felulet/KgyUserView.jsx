@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useSearchParams } from 'react-router-dom'
+import { NavLink, useSearchParams, useNavigate } from 'react-router-dom'
 import { CheckCircle2, ShieldAlert, BarChart2, Check, RefreshCw, LogOut } from 'lucide-react'
 import BrandLogo from '../../../common/components/BrandLogo.jsx'
 import { useAuth } from '../../../common/context/AuthContext.jsx'
 import { kgyService, getPollResults } from '../szolgaltatas/kgyService.js'
 
 export default function KgyUserView() {
+  const navigate = useNavigate()
   const { currentUser, loading, logout } = useAuth()
   const [searchParams] = useSearchParams()
   const [state, setState] = useState(() => kgyService.getState())
@@ -126,18 +127,28 @@ export default function KgyUserView() {
               ? "A közgyűlés felületét 'ex' státuszú tagok nem látogathatják."
               : 'A közgyűlés felületéhez csak az adatbázisban szereplő animátorok férhetnek hozzá.'}
           </p>
-          <NavLink
-            to="/timeline"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+              } else {
+                navigate('/timeline')
+              }
+            }}
             style={{
               marginTop: '16px',
               color: '#38bdf8',
-              textDecoration: 'none',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
               fontSize: '0.9375rem',
-              fontWeight: 500
+              fontWeight: 500,
+              fontFamily: 'inherit'
             }}
           >
-            ← Vissza az Idővonalra
-          </NavLink>
+            ← Vissza az előzőre
+          </button>
         </div>
       </div>
     )
@@ -185,16 +196,32 @@ export default function KgyUserView() {
           alignItems: 'center'
         }}
       >
-        <NavLink
-          to="/timeline"
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1)
+            } else {
+              navigate('/timeline')
+            }
+          }}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
             fontSize: '0.8125rem',
             color: '#666',
-            textDecoration: 'none'
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            fontFamily: 'inherit'
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#111')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#666')}
         >
-          ← Idővonal
-        </NavLink>
+          ← Vissza az előzőre
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <span style={{ fontSize: '0.8125rem', color: '#666' }}>
             Bejelentkezve: <strong>{currentUser?.nev}</strong>
