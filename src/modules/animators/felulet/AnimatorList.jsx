@@ -73,6 +73,13 @@ export default function AnimatorList() {
     return list
   }, [animators, searchQuery, sortField, sortOrder, selectedStatusFilter])
 
+  const activeCount = useMemo(() => {
+    return animators.filter((a) => {
+      const s = (a.statusz || '').trim().toLowerCase()
+      return s === 'aktív' || s === 'aktiv'
+    }).length
+  }, [animators])
+
   const getStatusBadgeStyle = (status) => {
     const s = (status || '').toLowerCase()
     if (s === 'aktív') {
@@ -214,7 +221,18 @@ export default function AnimatorList() {
               (Kattints egy sorra az idővonal megtekintéséhez)
             </span>
           )}
-          <span>{filteredAndSortedAnimators.length} tag</span>
+          <span>
+            Összesen:{' '}
+            <strong>
+              {filteredAndSortedAnimators.length !== animators.length
+                ? `${filteredAndSortedAnimators.length} / ${animators.length}`
+                : animators.length}
+            </strong>{' '}
+            tag
+            <span style={{ marginLeft: '6px', color: 'var(--color-text-muted, #94a3b8)' }}>
+              ({activeCount} aktív)
+            </span>
+          </span>
         </div>
       </div>
 
