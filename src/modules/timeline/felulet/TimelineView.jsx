@@ -188,6 +188,27 @@ export default function TimelineView() {
     }
   }
 
+  // Filter events for active user's timeline:
+  // A "tisztújítás" event must ONLY appear in the user's timeline if they have been elected to a position in that event.
+  const timelineEvents = useMemo(() => {
+    return events.filter((ev) => {
+      const t = (ev.tipus || '').toLowerCase()
+      const isTisztujitas = t === 'tisztújítás' || t === 'tisztujitas'
+
+      if (isTisztujitas) {
+        // User must have been elected / assigned a position in this tisztújítás
+        const hasPosition = positions.some(
+          (p) =>
+            Number(p.esemeny_ID) === Number(ev.esemeny_ID) &&
+            Number(p.animator_ID) === Number(activeUser?.animator_ID)
+        )
+        return hasPosition
+      }
+
+      return true
+    })
+  }, [events, positions, activeUser?.animator_ID])
+
   // Set of events attended by the active user
   const myAttendedEventIds = new Set(attendances.map((a) => Number(a.esemeny_ID)))
 
@@ -408,13 +429,13 @@ export default function TimelineView() {
             <div className="card" style={{ padding: '36px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
               Idővonal betöltése...
             </div>
-          ) : events.length === 0 ? (
+          ) : timelineEvents.length === 0 ? (
             <div className="card" style={{ padding: '36px', textAlign: 'center' }}>
               Nincsenek rögzített események.
             </div>
           ) : (
             <div className="timeline-track">
-              {events.map((ev) => {
+              {timelineEvents.map((ev) => {
                 const node = getNodeConfig(ev)
                 // Check if this is a Közgyűlés (including "Tisztújító Közgyűlés" which is a basic közgyűlés without position subtitle)
                 const isKozgyules =

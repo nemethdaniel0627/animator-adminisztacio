@@ -210,6 +210,7 @@ export default function EventList() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null)
   const [viewingPositionsEvent, setViewingPositionsEvent] = useState(null)
+  const [positions, setPositions] = useState([])
 
   // Pagination state (default: 20 items per page)
   const [currentPage, setCurrentPage] = useState(1)
@@ -219,13 +220,22 @@ export default function EventList() {
     try {
       setLoading(true)
       setError(null)
-      const data = await eventService.getEvents()
+      const [data, posList] = await Promise.all([
+        eventService.getEvents(),
+        apiClient.getPositions().catch(() => [])
+      ])
       setEvents(data)
+      setPositions(posList || [])
     } catch (err) {
       setError(err.message || 'Nem sikerült betölteni az eseményeket.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePositionsUpdated = async () => {
+    const posList = await apiClient.getPositions().catch(() => [])
+    setPositions(posList || [])
   }
 
   useEffect(() => {
@@ -451,97 +461,122 @@ export default function EventList() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedEvents.map((ev) => (
-                  <tr key={ev.esemeny_ID}>
-                    <td style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                      #{ev.esemeny_ID}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                          {ev.cim}
+                {paginatedEvents.map((ev) => {
+                  const eventPositions = positions.filter((p) => Number(p.esemeny_ID) === Number(ev.esemeny_ID))
+
+                  return (
+                    <tr key={ev.esemeny_ID}>
+                      <td style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                        #{ev.esemeny_ID}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                            {ev.cim}
+                          </span>
+                          {ev.tipus === 'tisztújítás' && (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgba(133, 27, 34, 0.1)',
+                                color: '#851b22',
+                                border: '1px solid rgba(133, 27, 34, 0.3)'
+                              }}
+                            >
+                              Vezetőségválasztás
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+                        {ev.datum}
+                      </td>
+                      <td>
+                        <span className={`type-badge badge-${(ev.tipus || '').replace(/\s+/g, '-')}`}>
+                          {ev.tipus}
                         </span>
-                        {ev.tipus === 'tisztújítás' && (
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {ev.tipus === 'tisztújítás' ? (
                           <span
                             style={{
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              backgroundColor: 'rgba(133, 27, 34, 0.1)',
-                              color: '#851b22',
-                              border: '1px solid rgba(133, 27, 34, 0.3)'
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: '0.8125rem',
+                              fontWeight: 600,
+                              backgroundColor: eventPositions.length > 0 ? 'rgba(133, 27, 34, 0.1)' : 'var(--color-surface-hover)',
+                              color: eventPositions.length > 0 ? '#851b22' : 'var(--color-text-muted)',
+                              border: eventPositions.length > 0 ? '1px solid rgba(133, 27, 34, 0.3)' : '1px solid var(--color-border)'
+                            }}
+                            title="Tisztújításon jelenléti ív helyett tisztségek/pozíciók vannak rögzítve"
+                          >
+                            <Award size={14} color={eventPositions.length > 0 ? '#851b22' : 'currentColor'} />
+                            {eventPositions.length} pozíció
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: '0.8125rem',
+                              fontWeight: 600,
+                              backgroundColor: (ev.attendeeCount || 0) > 0 ? 'var(--color-primary-50)' : 'var(--color-surface-hover)',
+                              color: (ev.attendeeCount || 0) > 0 ? 'var(--color-primary-700)' : 'var(--color-text-muted)'
                             }}
                           >
-                            Vezetőségválasztás
+                            <Users size={14} />
+                            {ev.attendeeCount || 0} fő
                           </span>
                         )}
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
-                      {ev.datum}
-                    </td>
-                    <td>
-                      <span className={`type-badge badge-${(ev.tipus || '').replace(/\s+/g, '-')}`}>
-                        {ev.tipus}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '4px 10px',
-                          borderRadius: 'var(--radius-full)',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          backgroundColor: (ev.attendeeCount || 0) > 0 ? 'var(--color-primary-50)' : 'var(--color-surface-hover)',
-                          color: (ev.attendeeCount || 0) > 0 ? 'var(--color-primary-700)' : 'var(--color-text-muted)'
-                        }}
-                      >
-                        <Users size={14} />
-                        {ev.attendeeCount || 0} fő
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => setEditingEvent(ev)}
-                          style={{ padding: '6px 10px', minHeight: '36px', fontSize: '0.8125rem' }}
-                          title="Esemény adatainak szerkesztése (név, dátum, típus)"
-                        >
-                          <Pencil size={15} />
-                          <span>Szerkesztés</span>
-                        </button>
-                        {ev.tipus === 'tisztújítás' && (
+                      </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
                           <button
                             type="button"
                             className="btn btn-secondary"
-                            onClick={() => handleOpenPositions(ev)}
+                            onClick={() => setEditingEvent(ev)}
                             style={{ padding: '6px 10px', minHeight: '36px', fontSize: '0.8125rem' }}
-                            title="Kiosztott vezetőségi pozíciók megtekintése"
+                            title="Esemény adatainak szerkesztése (név, dátum, típus)"
                           >
-                            <Award size={15} color="#851b22" />
-                            <span>Pozíciók</span>
+                            <Pencil size={15} />
+                            <span>Szerkesztés</span>
                           </button>
-                        )}
-
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => setSelectedEventForAttendance(ev)}
-                          style={{ padding: '6px 12px', minHeight: '36px', fontSize: '0.8125rem' }}
-                        >
-                          <UserCheck size={16} />
-                          <span>Jelenlét</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {ev.tipus === 'tisztújítás' ? (
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => handleOpenPositions(ev)}
+                              style={{ padding: '6px 10px', minHeight: '36px', fontSize: '0.8125rem' }}
+                              title="Kiosztott vezetőségi pozíciók megtekintése"
+                            >
+                              <Award size={15} color="#851b22" />
+                              <span>Pozíciók</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => setSelectedEventForAttendance(ev)}
+                              style={{ padding: '6px 12px', minHeight: '36px', fontSize: '0.8125rem' }}
+                            >
+                              <UserCheck size={16} />
+                              <span>Jelenlét</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -588,6 +623,7 @@ export default function EventList() {
         event={viewingPositionsEvent}
         isOpen={Boolean(viewingPositionsEvent)}
         onClose={() => setViewingPositionsEvent(null)}
+        onPositionsUpdated={handlePositionsUpdated}
       />
 
       {/* Attendance Manager Modal */}
