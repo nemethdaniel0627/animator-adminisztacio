@@ -1,5 +1,21 @@
 import { useState, useEffect, useMemo } from 'react'
-import { PlusCircle, Search, Calendar, Users, Filter, UserCheck, AlertCircle, Award, Eye, X, Pencil } from 'lucide-react'
+import {
+  PlusCircle,
+  Search,
+  Calendar,
+  Users,
+  Filter,
+  UserCheck,
+  AlertCircle,
+  Award,
+  Eye,
+  X,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
+} from 'lucide-react'
 import { EVENT_TYPES } from '../modell/eventModels.js'
 import { eventService } from '../szolgaltatas/eventService.js'
 import EventFormModal from './EventFormModal.jsx'
@@ -19,6 +35,10 @@ export default function EventList() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null)
   const [viewingPositionsEvent, setViewingPositionsEvent] = useState(null)
+
+  // Pagination state (default: 20 items per page)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   const loadEvents = async () => {
     try {
@@ -51,6 +71,35 @@ export default function EventList() {
     })
   }, [events, searchQuery, selectedType])
 
+  // Reset page to 1 whenever search query, type filter, or page size changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedType, pageSize])
+
+  // Pagination calculations
+  const totalItems = filteredEvents.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages)
+
+  const startIndex = (safeCurrentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalItems)
+  const paginatedEvents = useMemo(() => {
+    return filteredEvents.slice(startIndex, endIndex)
+  }, [filteredEvents, startIndex, endIndex])
+
+  const getPageNumbers = (current, total) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1)
+    }
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', total]
+    }
+    if (current >= total - 3) {
+      return [1, '...', total - 4, total - 3, total - 2, total - 1, total]
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total]
+  }
+
   const handleEventUpdated = (updated) => {
     setEvents((prev) =>
       prev.map((e) =>
@@ -64,6 +113,7 @@ export default function EventList() {
 
   const handleEventCreated = (newEvent) => {
     setEvents((prev) => [newEvent, ...prev])
+    setCurrentPage(1)
     // Offer to manage attendances for regular events
     if (newEvent.tipus !== 'tisztújítás') {
       setSelectedEventForAttendance(newEvent)
@@ -195,7 +245,8 @@ export default function EventList() {
           </button>
         </div>
       ) : (
-        <div className="table-wrapper">
+        <>
+          <div className="table-wrapper">
           <table className="data-table">
             <thead>
               <tr>
@@ -208,7 +259,7 @@ export default function EventList() {
               </tr>
             </thead>
             <tbody>
-              {filteredEvents.map((ev) => (
+              {paginatedEvents.map((ev) => (
                 <tr key={ev.esemeny_ID}>
                   <td style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>
                     #{ev.esemeny_ID}
@@ -302,6 +353,168 @@ export default function EventList() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalItems > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              padding: '12px 18px',
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            {/* Left side: Item range & Page size picker */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                Megjelenítve: <strong>{startIndex + 1}–{endIndex}</strong> / {totalItems} esemény
+              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label htmlFor="pageSizeSelect" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  Oldalméret:
+                </label>
+                <select
+                  id="pageSizeSelect"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'var(--color-bg)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value={10}>10 / oldal</option>
+                  <option value={20}>20 / oldal</option>
+                  <option value={50}>50 / oldal</option>
+                  <option value={100}>100 / oldal</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Right side: Page navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCurrentPage(1)}
+                disabled={safeCurrentPage <= 1}
+                style={{
+                  padding: '6px 8px',
+                  minHeight: '32px',
+                  fontSize: '0.8125rem',
+                  opacity: safeCurrentPage <= 1 ? 0.35 : 1,
+                  cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer'
+                }}
+                title="Első oldal"
+              >
+                <ChevronsLeft size={15} />
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safeCurrentPage <= 1}
+                style={{
+                  padding: '6px 8px',
+                  minHeight: '32px',
+                  fontSize: '0.8125rem',
+                  opacity: safeCurrentPage <= 1 ? 0.35 : 1,
+                  cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer'
+                }}
+                title="Előző oldal"
+              >
+                <ChevronLeft size={15} />
+              </button>
+
+              {/* Page numbers */}
+              {getPageNumbers(safeCurrentPage, totalPages).map((p, idx) =>
+                p === '...' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    style={{
+                      padding: '0 4px',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    style={{
+                      minWidth: '32px',
+                      height: '32px',
+                      padding: '0 6px',
+                      borderRadius: '6px',
+                      fontSize: '0.8125rem',
+                      fontWeight: p === safeCurrentPage ? 700 : 500,
+                      border: p === safeCurrentPage ? '1px solid #2563eb' : '1px solid var(--color-border)',
+                      backgroundColor: p === safeCurrentPage ? '#2563eb' : 'var(--color-surface)',
+                      color: p === safeCurrentPage ? '#ffffff' : 'var(--color-text-primary)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safeCurrentPage >= totalPages}
+                style={{
+                  padding: '6px 8px',
+                  minHeight: '32px',
+                  fontSize: '0.8125rem',
+                  opacity: safeCurrentPage >= totalPages ? 0.35 : 1,
+                  cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer'
+                }}
+                title="Következő oldal"
+              >
+                <ChevronRight size={15} />
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={safeCurrentPage >= totalPages}
+                style={{
+                  padding: '6px 8px',
+                  minHeight: '32px',
+                  fontSize: '0.8125rem',
+                  opacity: safeCurrentPage >= totalPages ? 0.35 : 1,
+                  cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer'
+                }}
+                title="Utolsó oldal"
+              >
+                <ChevronsRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+      </>
       )}
 
       {/* Regular Event Creation & Editing Modal */}
