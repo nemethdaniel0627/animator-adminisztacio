@@ -13,10 +13,17 @@ import {
   Check,
   Clock,
   Sparkles,
-  MoveHorizontal
+  MoveHorizontal,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { statuszujitasService } from '../szolgaltatas/statuszujitasService.js'
-import { STATUSZ_OPTIONS, isStatuszujitasPeriodActive, matchStatusOption } from '../modell/statuszujitasModels.js'
+import {
+  STATUSZ_OPTIONS,
+  isStatuszujitasPeriodActive,
+  matchStatusOption,
+  isDecisionInDateRange
+} from '../modell/statuszujitasModels.js'
 import './statuszujitas.css'
 
 export default function StatuszujitasAdminView() {
@@ -29,6 +36,7 @@ export default function StatuszujitasAdminView() {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL') // ALL, SUBMITTED, NOT_SUBMITTED, FAILED
+  const [showHandled, setShowHandled] = useState(false)
 
   // Admin Period Controls State
   const [isPeriodActive, setIsPeriodActive] = useState(true)
@@ -103,6 +111,11 @@ export default function StatuszujitasAdminView() {
   // Filtered rows
   const filteredRows = useMemo(() => {
     return kerelmek.filter((row) => {
+      const isHandled = isDecisionInDateRange(row.dontes_datum, startDate, endDate)
+      if (!showHandled && isHandled) {
+        return false
+      }
+
       const q = searchQuery.toLowerCase().trim()
       const matchesSearch =
         !q ||
@@ -124,7 +137,7 @@ export default function StatuszujitasAdminView() {
 
       return matchesSearch && matchesFilter
     })
-  }, [kerelmek, searchQuery, statusFilter])
+  }, [kerelmek, searchQuery, statusFilter, showHandled, startDate, endDate])
 
   // Save admin decision for a single animator
   const handleDecision = async (animatorId) => {
@@ -184,6 +197,9 @@ export default function StatuszujitasAdminView() {
 
   // Counts for statistics
   const totalCount = kerelmek.length
+  const handledCount = useMemo(() => {
+    return kerelmek.filter((row) => isDecisionInDateRange(row.dontes_datum, startDate, endDate)).length
+  }, [kerelmek, startDate, endDate])
   const submittedCount = kerelmek.filter((k) => k.hasSubmitted && k.igenyelt_statusz).length
   const notSubmittedCount = totalCount - submittedCount
   const passedCount = kerelmek.filter((k) => k.hasSubmitted && k.igenyelt_statusz && k.evaluation?.passed).length
@@ -348,6 +364,10 @@ export default function StatuszujitasAdminView() {
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>HIÁNYZÓ FELTÉTELES</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f59e0b', marginTop: '4px' }}>{failedCount} fő</div>
         </div>
+        <div style={{ background: 'var(--color-surface)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>ELBÍRÁLT ESETEK</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#8b5cf6', marginTop: '4px' }}>{handledCount} fő</div>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -383,26 +403,60 @@ export default function StatuszujitasAdminView() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Filter size={16} color="var(--color-text-muted)" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={16} color="var(--color-text-muted)" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+                fontSize: '0.8125rem'
+              }}
+            >
+              <option value="ALL">Összes érintett ({totalCount})</option>
+              <option value="SUBMITTED">Beküldött kérelmek ({submittedCount})</option>
+              <option value="NOT_SUBMITTED">Nem igényelt státuszt ({notSubmittedCount})</option>
+              <option value="PASSED">Feltételt teljesített ({passedCount})</option>
+              <option value="FAILED">Nem teljesülő feltételes ({failedCount})</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowHandled((prev) => !prev)}
             style={{
-              padding: '8px 12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
               borderRadius: '6px',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
-              color: 'var(--color-text-primary)',
-              fontSize: '0.8125rem'
+              border: showHandled
+                ? '1px solid #3b82f6'
+                : '1px solid var(--color-border)',
+              backgroundColor: showHandled
+                ? 'rgba(59, 130, 246, 0.15)'
+                : 'var(--color-surface)',
+              color: showHandled
+                ? '#60a5fa'
+                : 'var(--color-text-secondary)',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap'
             }}
+            title={showHandled ? 'Elbírált esetek elrejtése' : 'Elbírált esetek megjelenítése'}
           >
-            <option value="ALL">Összes érintett ({totalCount})</option>
-            <option value="SUBMITTED">Beküldött kérelmek ({submittedCount})</option>
-            <option value="NOT_SUBMITTED">Nem igényelt státuszt ({notSubmittedCount})</option>
-            <option value="PASSED">Feltételt teljesített ({passedCount})</option>
-            <option value="FAILED">Nem teljesülő feltételes ({failedCount})</option>
-          </select>
+            {showHandled ? <EyeOff size={15} /> : <Eye size={15} />}
+            <span>
+              {showHandled ? 'Elbíráltak elrejtése' : `Elbíráltak mutatása (${handledCount})`}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -437,11 +491,32 @@ export default function StatuszujitasAdminView() {
             {filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={4} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-muted)' }}>
-                  Nem található a feltételeknek megfelelő státuszújítási kérelem.
+                  {handledCount > 0 && !showHandled ? (
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '6px', fontSize: '1rem' }}>
+                        Minden kérelem el van bírálva a jelenlegi időszakban! 🎉
+                      </div>
+                      <div style={{ fontSize: '0.875rem', marginBottom: '14px' }}>
+                        {handledCount} elbírált eset elrejtve.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowHandled(true)}
+                        style={{ fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Eye size={14} />
+                        <span>Elbírált esetek megtekintése</span>
+                      </button>
+                    </div>
+                  ) : (
+                    'Nem található a feltételeknek megfelelő státuszújítási kérelem.'
+                  )}
                 </td>
               </tr>
             ) : (
               filteredRows.map((row) => {
+                const isHandled = isDecisionInDateRange(row.dontes_datum, startDate, endDate)
                 const defaultChoice = row.status === 'elbirálva'
                   ? row.megadott_statusz
                   : row.hasSubmitted
@@ -451,7 +526,7 @@ export default function StatuszujitasAdminView() {
                 const isSaving = savingRows[row.animator_ID]
 
                 return (
-                  <tr key={row.animator_ID}>
+                  <tr key={row.animator_ID} style={isHandled ? { backgroundColor: 'rgba(59, 130, 246, 0.03)' } : undefined}>
                     {/* 1. Név */}
                     <td>
                       <span className="animator-name-link">
@@ -460,6 +535,27 @@ export default function StatuszujitasAdminView() {
                       <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                         Jelenleg: <strong style={{ textTransform: 'capitalize' }}>{row.jelenlegi_statusz}</strong>
                       </div>
+                      {isHandled && (
+                        <div style={{ marginTop: '4px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.725rem',
+                              fontWeight: 600,
+                              color: '#10b981',
+                              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.25)',
+                              padding: '2px 7px',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            <Check size={12} />
+                            <span>Elbírálva ({row.megadott_statusz})</span>
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     {/* 2. Igényelt státusz */}

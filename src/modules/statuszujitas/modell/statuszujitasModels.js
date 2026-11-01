@@ -74,6 +74,28 @@ export function isStatuszujitasPeriodActive(config, customDate = null) {
 }
 
 /**
+ * Checks whether a decision was made within the specified date range.
+ * @param {string} dontesDatum - ISO timestamp or date string of when the decision occurred
+ * @param {string} [startDate] - YYYY-MM-DD
+ * @param {string} [endDate] - YYYY-MM-DD
+ * @returns {boolean}
+ */
+export function isDecisionInDateRange(dontesDatum, startDate, endDate) {
+  if (!dontesDatum) return false
+  const d = new Date(dontesDatum)
+  if (isNaN(d.getTime())) return false
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}`
+
+  if (startDate && dateStr < startDate) return false
+  if (endDate && dateStr > endDate) return false
+  return true
+}
+
+/**
  * Evaluates an animator's attendances against the 4 mandatory requirements.
  * @param {Array<object>} attendances - List of attendances with event details (cim, tipus, datum)
  * @returns {object} Full evaluation result
