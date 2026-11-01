@@ -16,7 +16,7 @@ import {
   MoveHorizontal
 } from 'lucide-react'
 import { statuszujitasService } from '../szolgaltatas/statuszujitasService.js'
-import { STATUSZ_OPTIONS, isStatuszujitasPeriodActive } from '../modell/statuszujitasModels.js'
+import { STATUSZ_OPTIONS, isStatuszujitasPeriodActive, matchStatusOption } from '../modell/statuszujitasModels.js'
 import './statuszujitas.css'
 
 export default function StatuszujitasAdminView() {
@@ -57,10 +57,19 @@ export default function StatuszujitasAdminView() {
 
       // Initialize selected statuses for each row
       const initialMap = {}
-        ; (list || []).forEach((row) => {
-          // If user hasn't requested or is not approved, default to 'Kizárás' (as in portal screenshot) or their current status
-          initialMap[row.animator_ID] = row.megadott_statusz || (row.hasSubmitted ? row.igenyelt_statusz : 'Kizárás')
-        })
+      ;(list || []).forEach((row) => {
+        let defaultChoice = 'Ex'
+        if (row.status === 'elbirálva' && row.megadott_statusz) {
+          defaultChoice = row.megadott_statusz
+        } else if (row.hasSubmitted && row.igenyelt_statusz) {
+          defaultChoice = row.igenyelt_statusz
+        } else if (row.megadott_statusz) {
+          defaultChoice = row.megadott_statusz
+        } else {
+          defaultChoice = 'Ex'
+        }
+        initialMap[row.animator_ID] = matchStatusOption(defaultChoice)
+      })
       setSelectedStatuses(initialMap)
     } catch (err) {
       console.error('Error loading admin statuszujitas:', err)
@@ -118,11 +127,17 @@ export default function StatuszujitasAdminView() {
 
   // Save admin decision for a single animator
   const handleDecision = async (animatorId) => {
-    const choice = selectedStatuses[animatorId] || 'Kizárás'
+    const targetAnim = kerelmek.find((k) => k.animator_ID === animatorId)
+    const fallbackChoice = targetAnim?.status === 'elbirálva'
+      ? targetAnim?.megadott_statusz
+      : targetAnim?.hasSubmitted
+        ? targetAnim?.igenyelt_statusz
+        : 'Ex'
+    const choice = matchStatusOption(selectedStatuses[animatorId] || fallbackChoice)
+
     setSavingRows((prev) => ({ ...prev, [animatorId]: true }))
     try {
       const res = await statuszujitasService.decideKerelem(animatorId, choice)
-      const targetAnim = kerelmek.find((k) => k.animator_ID === animatorId)
       setToastMessage(`${targetAnim?.nev || 'Animátor'} státusza sikeresen mentve: ${choice}`)
 
       // Update local state
@@ -139,6 +154,7 @@ export default function StatuszujitasAdminView() {
             : k
         )
       )
+      setSelectedStatuses((prev) => ({ ...prev, [animatorId]: choice }))
     } catch (err) {
       alert(err.message || 'Hiba történt a státusz mentésekor.')
     } finally {
@@ -425,7 +441,12 @@ export default function StatuszujitasAdminView() {
               </tr>
             ) : (
               filteredRows.map((row) => {
-                const isSelected = selectedStatuses[row.animator_ID] || 'Kizárás'
+                const defaultChoice = row.status === 'elbirálva'
+                  ? row.megadott_statusz
+                  : row.hasSubmitted
+                    ? row.igenyelt_statusz
+                    : 'Ex'
+                const isSelected = matchStatusOption(selectedStatuses[row.animator_ID] || defaultChoice)
                 const isSaving = savingRows[row.animator_ID]
 
                 return (
@@ -537,12 +558,13 @@ export default function StatuszujitasAdminView() {
                         <select
                           className="statusz-dropdown"
                           value={isSelected}
-                          onChange={(e) =>
-                            setSelectedStatuses({
-                              ...selectedStatuses,
-                              [row.animator_ID]: e.target.value
-                            })
-                          }
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSelectedStatuses((prev) => ({
+                              ...prev,
+                              [row.animator_ID]: val
+                            }))
+                          }}
                           disabled={isSaving}
                         >
                           {STATUSZ_OPTIONS.map((opt) => (

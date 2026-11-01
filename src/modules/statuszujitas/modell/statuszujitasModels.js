@@ -14,7 +14,7 @@
 export const ELIGIBLE_STATUSES = ['aktív', 'ifjú', 'vén', 'veterán']
 
 export const STATUSZ_OPTIONS = [
-  'Kizárás',
+  'Ex',
   'Aktív',
   'Passzív',
   'Ifjú',
@@ -23,6 +23,16 @@ export const STATUSZ_OPTIONS = [
 ]
 
 export const REQUESTABLE_STATUSES = ['Aktív', 'Passzív', 'Vén', 'Veterán', 'Ex']
+
+/**
+ * Matches any status string case-insensitively to the canonical STATUSZ_OPTIONS value.
+ * Defaults to 'Ex' if invalid or missing.
+ */
+export function matchStatusOption(status) {
+  if (!status) return 'Ex'
+  const found = STATUSZ_OPTIONS.find((opt) => opt.toLowerCase() === String(status).trim().toLowerCase())
+  return found || 'Ex'
+}
 
 /**
  * Normalizes a status string (lowercase, accent-tolerant).

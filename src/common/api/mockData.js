@@ -420,7 +420,7 @@ function loadStore() {
             }
             return {
               ...a,
-              statusz: 'aktív',
+              statusz: a.statusz || 'aktív',
               kategoria: a.kategoria === 'vén' || a.kategoria === 'veterán' ? 'senior' : (a.kategoria || 'junior'),
               password: 'test1234'
             }
@@ -815,7 +815,7 @@ export const mockStore = {
         submittedAt: req?.submittedAt || null,
         status: req?.status || 'nem_igenyelt', // 'nem_igenyelt' | 'fuggoben' | 'elbirálva'
         indoklas: req?.indoklas || '',
-        megadott_statusz: req?.megadott_statusz || animator.statusz || 'Aktív',
+        megadott_statusz: req?.megadott_statusz || (req?.igenyelt_statusz ? req.igenyelt_statusz : 'Ex'),
         dontes_datum: req?.dontes_datum || null,
         evaluation
       }

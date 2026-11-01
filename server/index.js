@@ -673,7 +673,7 @@ app.get('/api/statuszujitas/kerelmek', async (req, res) => {
         igenyelt_statusz: existing?.igenyelt_statusz || null,
         submittedAt: existing?.submittedAt || null,
         indoklas: existing?.indoklas || '',
-        megadott_statusz: existing?.megadott_statusz || 'Kizárás',
+        megadott_statusz: existing?.megadott_statusz || 'Ex',
         dontes_datum: existing?.dontes_datum || null
       }
     }))
@@ -708,15 +708,40 @@ app.post('/api/statuszujitas/submit', (req, res) => {
   res.json({ success: true, message: 'Kérelem sikeresen rögzítve.' })
 })
 
-app.post('/api/statuszujitas/decision/:id', (req, res) => {
+app.post('/api/statuszujitas/decision/:id', async (req, res) => {
   const animatorId = Number(req.params.id)
   const { megadott_statusz } = req.body || {}
+  const now = new Date().toISOString()
   const idx = statuszujitasKerelmekState.findIndex(k => Number(k.animator_ID) === animatorId)
   if (idx !== -1) {
     statuszujitasKerelmekState[idx].megadott_statusz = megadott_statusz
     statuszujitasKerelmekState[idx].status = 'elbirálva'
-    statuszujitasKerelmekState[idx].dontes_datum = new Date().toISOString()
+    statuszujitasKerelmekState[idx].dontes_datum = now
+  } else {
+    statuszujitasKerelmekState.push({
+      kerelem_ID: statuszujitasKerelmekState.length + 1,
+      animator_ID: animatorId,
+      igenyelt_statusz: null,
+      indoklas: 'Adminisztrátori közvetlen státuszmegadás',
+      submittedAt: null,
+      status: 'elbirálva',
+      megadott_statusz: megadott_statusz,
+      dontes_datum: now
+    })
   }
+
+  try {
+    const pool = getPool()
+    if (pool) {
+      await pool.execute(
+        'UPDATE animator SET statusz = ? WHERE animator_ID = ?',
+        [String(megadott_statusz || 'Ex').toLowerCase(), animatorId]
+      )
+    }
+  } catch (err) {
+    // Database might not be configured in mock dev mode
+  }
+
   res.json({ success: true, message: 'Státusz sikeresen jóváhagyva.' })
 })
 
@@ -786,7 +811,7 @@ app.get('/api/profile', async (req, res) => {
         avatarUrl: ''
       })
     }
-  } catch {}
+  } catch { }
   res.json({
     nev: 'Németh Dániel',
     email: 'nem.dani0627@gmail.com',
@@ -804,7 +829,7 @@ app.post('/api/profile', async (req, res) => {
         [nev || null, email || null, telefon || null]
       )
     }
-  } catch {}
+  } catch { }
   res.json({ success: true, nev, email, telefon })
 })
 
